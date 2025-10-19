@@ -210,7 +210,7 @@
           authDomain: "glober-tracker-shipment.firebaseapp.com",
           projectId: "glober-tracker-shipment",
           storageBucket: "glober-tracker-shipment.firebasestorage.app",
-          messagingSenderId: "828350996500", // Example of corrected ID
+          messagingSenderId: "8283509965",
           appId: "1:8283509965:web:7037cc7865ce40fbfe0584"
         };
 
@@ -263,38 +263,42 @@
                 };
 
                 const addShipment = async () => {
-                    // Validation
-                    const ns = newShipment.value;
-                    if (!ns.trackingNumber || !ns.description || !ns.initialStatusNote || !ns.startDate || !ns.expectedDate || !ns.recipientEmail || !ns.recipientAddress || !ns.senderName || !ns.recipientName) {
-                        showToast("Error: Please fill in all fields.");
-                        return;
-                    }
-                    const trackingId = ns.trackingNumber.trim();
-                    const docRef = doc(db, 'shipments', trackingId);
-                    
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        showToast("Error: Tracking number already exists.");
-                        return;
-                    }
+                    try {
+                        const ns = newShipment.value;
+                        if (!ns.trackingNumber || !ns.description || !ns.initialStatusNote || !ns.startDate || !ns.expectedDate || !ns.recipientEmail || !ns.recipientAddress || !ns.senderName || !ns.recipientName) {
+                            showToast("Error: Please fill in all fields.");
+                            return;
+                        }
+                        const trackingId = ns.trackingNumber.trim();
+                        const docRef = doc(db, 'shipments', trackingId);
+                        
+                        const docSnap = await getDoc(docRef);
+                        if (docSnap.exists()) {
+                            showToast("Error: Tracking number already exists.");
+                            return;
+                        }
 
-                    await setDoc(docRef, {
-                        description: ns.description,
-                        senderName: ns.senderName,
-                        recipientName: ns.recipientName,
-                        startDate: ns.startDate,
-                        expectedDate: ns.expectedDate,
-                        recipientEmail: ns.recipientEmail,
-                        recipientAddress: ns.recipientAddress,
-                        statusHistory: [{
-                            status: 'Pending',
-                            note: ns.initialStatusNote,
-                            timestamp: serverTimestamp()
-                        }],
-                        lastUpdate: serverTimestamp()
-                    });
-                    newShipment.value = { trackingNumber: '', description: '', initialStatusNote: '', startDate: '', expectedDate: '', recipientEmail: '', recipientAddress: '', senderName: '', recipientName: '' };
-                    showToast("Shipment created successfully!");
+                        await setDoc(docRef, {
+                            description: ns.description,
+                            senderName: ns.senderName,
+                            recipientName: ns.recipientName,
+                            startDate: ns.startDate,
+                            expectedDate: ns.expectedDate,
+                            recipientEmail: ns.recipientEmail,
+                            recipientAddress: ns.recipientAddress,
+                            statusHistory: [{
+                                status: 'Pending',
+                                note: ns.initialStatusNote,
+                                timestamp: serverTimestamp()
+                            }],
+                            lastUpdate: serverTimestamp()
+                        });
+                        newShipment.value = { trackingNumber: '', description: '', initialStatusNote: '', startDate: '', expectedDate: '', recipientEmail: '', recipientAddress: '', senderName: '', recipientName: '' };
+                        showToast("Shipment created successfully!");
+                    } catch (error) {
+                        console.error("Error creating shipment:", error);
+                        showToast("Error: Could not create shipment. Check console.");
+                    }
                 };
 
                 const deleteShipment = async (id) => {
@@ -372,7 +376,6 @@
                     } else {
                         isTrackingView.value = false;
                         onSnapshot(shipmentsCol, (snapshot) => {
-                            // THIS IS THE CORRECTED LINE WITH ONE DOT
                             shipments.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
                                 .sort((a, b) => b.lastUpdate.seconds - a.lastUpdate.seconds);
                         });

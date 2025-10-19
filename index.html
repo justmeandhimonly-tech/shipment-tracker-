@@ -205,16 +205,14 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, deleteDoc, serverTimestamp, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // This is the most important step. Without this, the "Create Shipment" button will not work.
         const firebaseConfig = {
-  apiKey: "AIzaSyBCjTWZLpk9PExiSetzcUnINLgNlmzACJ0",
-  authDomain: "glober-tracker-shipment.firebaseapp.com",
-  projectId: "glober-tracker-shipment",
-  storageBucket: "glober-tracker-shipment.firebasestorage.app",
-  messagingSenderId: "8283509965",
-  appId: "1:8283509965:web:7037cc7865ce40fbfe0584"
-};
-        // ----------------------------------------------------
+          apiKey: "AIzaSyBCjTWZLpk9PExiSetzcUnINLgNlmzACJ0",
+          authDomain: "glober-tracker-shipment.firebaseapp.com",
+          projectId: "glober-tracker-shipment",
+          storageBucket: "glober-tracker-shipment.firebasestorage.app",
+          messagingSenderId: "828350996500", // Example of corrected ID
+          appId: "1:8283509965:web:7037cc7865ce40fbfe0584"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -374,7 +372,8 @@
                     } else {
                         isTrackingView.value = false;
                         onSnapshot(shipmentsCol, (snapshot) => {
-                            shipments.value = snapshot.docs..map(doc => ({ id: doc.id, ...doc.data() }))
+                            // THIS IS THE CORRECTED LINE WITH ONE DOT
+                            shipments.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
                                 .sort((a, b) => b.lastUpdate.seconds - a.lastUpdate.seconds);
                         });
                     }

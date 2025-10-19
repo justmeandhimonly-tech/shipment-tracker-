@@ -202,28 +202,20 @@
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script type="module">
-        // Using an older compatibility library to handle the unusual project number
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, deleteDoc, serverTimestamp, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
         
-        // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+        // Your web app's Firebase configuration from your NEW project
+        const firebaseConfig = {
+          apiKey: "AIzaSyBD4PTlqhF8NQZM4bAjSHJfcL3Mg0XmIUE",
+          authDomain: "global-shipment-final.firebaseapp.com",
+          projectId: "global-shipment-final",
+          storageBucket: "global-shipment-final.firebasestorage.app",
+          messagingSenderId: "271919121305",
+          appId: "1:271919121305:web:c682dd03f566277e520908"
+        };
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBD4PTlqhF8NQZM4bAjSHJfcL3Mg0XmIUE",
-  authDomain: "global-shipment-final.firebaseapp.com",
-  projectId: "global-shipment-final",
-  storageBucket: "global-shipment-final.firebasestorage.app",
-  messagingSenderId: "271919121305",
-  appId: "1:271919121305:web:c682dd03f566277e520908"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 

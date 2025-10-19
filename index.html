@@ -374,7 +374,7 @@
                     } else {
                         isTrackingView.value = false;
                         onSnapshot(shipmentsCol, (snapshot) => {
-                            shipments.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                            shipments.value = snapshot.docs..map(doc => ({ id: doc.id, ...doc.data() }))
                                 .sort((a, b) => b.lastUpdate.seconds - a.lastUpdate.seconds);
                         });
                     }

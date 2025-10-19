@@ -202,8 +202,9 @@
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, deleteDoc, serverTimestamp, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Using an older compatibility library to handle the unusual project number
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, deleteDoc, serverTimestamp, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
         
         const firebaseConfig = {
           apiKey: "AIzaSyBCjTWZLpk9PExiSetzcUnINLgNlmzACJ0",
@@ -257,7 +258,7 @@
                 };
 
                 const generateTrackingNumber = () => {
-                    const prefix = "GTS"; // Global Tracker Shipment
+                    const prefix = "GTS";
                     const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
                     newShipment.value.trackingNumber = `${prefix}-${randomPart}`;
                 };
@@ -265,7 +266,7 @@
                 const addShipment = async () => {
                     try {
                         const ns = newShipment.value;
-                        if (!ns.trackingNumber || !ns.description || !ns.initialStatusNote || !ns.startDate || !ns.expectedDate || !ns.recipientEmail || !ns.recipientAddress || !ns.senderName || !ns.recipientName) {
+                        if (Object.values(ns).some(val => val === '')) {
                             showToast("Error: Please fill in all fields.");
                             return;
                         }
@@ -293,31 +294,27 @@
                             }],
                             lastUpdate: serverTimestamp()
                         });
-                        newShipment.value = { trackingNumber: '', description: '', initialStatusNote: '', startDate: '', expectedDate: '', recipientEmail: '', recipientAddress: '', senderName: '', recipientName: '' };
+                        newShipment.value = { trackingNumber: '', description: '', senderName: '', recipientName: '', initialStatusNote: '', startDate: '', expectedDate: '', recipientEmail: '', recipientAddress: '' };
                         showToast("Shipment created successfully!");
                     } catch (error) {
                         console.error("Error creating shipment:", error);
-                        showToast("Error: Could not create shipment. Check console.");
+                        showToast("Error: Could not create shipment. Check console for details.");
                     }
                 };
 
                 const deleteShipment = async (id) => {
-                    if (confirm("Are you sure you want to delete this shipment?")) {
+                    if (confirm("Are you sure?")) {
                         await deleteDoc(doc(db, 'shipments', id));
                         showToast("Shipment deleted.");
                     }
                 };
                 
                 const placeShipmentOnHold = async (id) => {
-                    const reason = prompt("Please provide a reason for placing this shipment on hold:");
+                    const reason = prompt("Reason for placing shipment on hold:");
                     if (reason && reason.trim() !== '') {
                         const docRef = doc(db, 'shipments', id);
                         await updateDoc(docRef, {
-                            statusHistory: arrayUnion({
-                                status: 'On-Hold',
-                                note: reason,
-                                timestamp: serverTimestamp()
-                            }),
+                            statusHistory: arrayUnion({ status: 'On-Hold', note: reason, timestamp: serverTimestamp() }),
                             lastUpdate: serverTimestamp()
                         });
                         showToast("Shipment placed on hold.");
@@ -331,14 +328,9 @@
                         showToast("Please add a status note.");
                         return;
                     }
-
                     const docRef = doc(db, 'shipments', id);
                     await updateDoc(docRef, {
-                        statusHistory: arrayUnion({
-                            status: status,
-                            note: note,
-                            timestamp: serverTimestamp()
-                        }),
+                        statusHistory: arrayUnion({ status: status, note: note, timestamp: serverTimestamp() }),
                         lastUpdate: serverTimestamp()
                     });
                     document.getElementById(`note-${id}`).value = '';
@@ -348,31 +340,27 @@
                 const copyTrackingLink = (id) => {
                     const url = `${window.location.origin}${window.location.pathname}#${id}`;
                     navigator.clipboard.writeText(url).then(() => {
-                        showToast("Tracking link copied to clipboard!");
+                        showToast("Tracking link copied!");
                     });
                 };
 
-                // Logic to handle URL hash for tracking view
-                const handleRouting = async () => {
+                const handleRouting = () => {
                     const trackingId = window.location.hash.replace('#', '');
                     if (trackingId) {
                         isTrackingView.value = true;
                         trackedShipment.value = null;
                         trackingError.value = '';
-                        
                         const docRef = doc(db, "shipments", trackingId);
-                        
                         onSnapshot(docRef, (docSnap) => {
                              if (docSnap.exists()) {
                                 trackedShipment.value = { id: docSnap.id, ...docSnap.data() };
                             } else {
-                                trackingError.value = "No shipment found with this tracking number.";
+                                trackingError.value = "No shipment found.";
                             }
                         }, (error) => {
                             console.error("Error fetching shipment:", error);
-                            trackingError.value = "Could not retrieve shipment details.";
+                            trackingError.value = "Could not retrieve details.";
                         });
-
                     } else {
                         isTrackingView.value = false;
                         onSnapshot(shipmentsCol, (snapshot) => {
@@ -389,8 +377,8 @@
 
                 return {
                     shipments, newShipment, isTrackingView, trackedShipment, trackingError, toast,
-                    addShipment, deleteShipment, updateShipmentStatus, copyTrackingLink, getStatusWidth, generateTrackingNumber,
-                    placeShipmentOnHold, getStatusBarClass
+                    addShipment, deleteShipment, updateShipmentStatus, copyTrackingLink, getStatusWidth,
+                    generateTrackingNumber, placeShipmentOnHold, getStatusBarClass
                 };
             }
         }).mount('#app');

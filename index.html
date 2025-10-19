@@ -206,14 +206,23 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, deleteDoc, serverTimestamp, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
         
-        const firebaseConfig = {
-          apiKey: "AIzaSyBCjTWZLpk9PExiSetzcUnINLgNlmzACJ0",
-          authDomain: "glober-tracker-shipment.firebaseapp.com",
-          projectId: "glober-tracker-shipment",
-          storageBucket: "glober-tracker-shipment.firebasestorage.app",
-          messagingSenderId: "8283509965",
-          appId: "1:8283509965:web:7037cc7865ce40fbfe0584"
-        };
+        // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBD4PTlqhF8NQZM4bAjSHJfcL3Mg0XmIUE",
+  authDomain: "global-shipment-final.firebaseapp.com",
+  projectId: "global-shipment-final",
+  storageBucket: "global-shipment-final.firebasestorage.app",
+  messagingSenderId: "271919121305",
+  appId: "1:271919121305:web:c682dd03f566277e520908"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);

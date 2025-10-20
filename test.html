@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Connection Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="text-center">
+        <h1 class="text-2xl font-bold mb-4">Firebase Connection Test</h1>
+        <button id="test-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Click to Test Database Write
+        </button>
+        <p id="result" class="mt-4 text-lg"></p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyA-9eJREND4cxNzju_4U01Tg4IUrLWNbfQ",
+          authDomain: "tracking-system-4d000.firebaseapp.com",
+          projectId: "tracking-system-4d000",
+          storageBucket: "tracking-system-4d000.firebasestorage.app",
+          messagingSenderId: "457867943433",
+          appId: "1:457867943433:web:8a3083c4cde07a3abb22d8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const resultEl = document.getElementById('result');
+
+        document.getElementById('test-button').addEventListener('click', async () => {
+            resultEl.textContent = "Attempting to write to database...";
+            try {
+                const docRef = await addDoc(collection(db, "shipments"), {
+                    test: "Hello World",
+                    timestamp: new Date()
+                });
+                console.log("Document written with ID: ", docRef.id);
+                resultEl.textContent = "SUCCESS! Data was written to the database.";
+                resultEl.style.color = 'green';
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                resultEl.textContent = `FAILURE. Error: ${e.message}`;
+                resultEl.style.color = 'red';
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -9,18 +9,12 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .card-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
-        .status-icon { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
-        .status-Delivered { background-color: #10b981; }
-        .status-In-Transit { background-color: #3b82f6; }
-        .status-Exception { background-color: #ef4444; }
-        .status-Pending, .status-Out-for-Delivery, .status-On-Hold { background-color: #f59e0b; }
         [v-cloak] { display: none; }
     </style>
 </head>
 <body class="bg-slate-100">
     <div id="app" v-cloak class="mx-auto p-4">
 
-        <!-- Header -->
         <header class="bg-white p-4 rounded-xl shadow-md sticky top-4 z-10 mb-8">
             <h1 class="text-3xl font-extrabold text-indigo-700 flex items-center">
                 <span class="mr-3 text-4xl">🌍</span>
@@ -30,95 +24,74 @@
             <p v-if="!isTrackingView" class="text-sm text-slate-500 mt-1">Manage all your shipments in real-time.</p>
         </header>
 
-        <!-- Admin View -->
         <div v-if="!isTrackingView" class="space-y-8">
-             <!-- Add New Shipment Form -->
              <div class="bg-white p-6 rounded-2xl card-shadow border-t-4 border-indigo-500">
                 <h2 class="text-xl font-bold text-slate-800 mb-4">Create New Shipment</h2>
                 <form @submit.prevent="addShipment" class="space-y-4">
-                    <!-- Row 1: Tracking & Description -->
                     <div class="grid md:grid-cols-2 gap-4">
                          <div>
-                            <label for="tracking-number" class="block text-sm font-medium text-slate-700">Tracking Number</label>
+                            <label class="block text-sm font-medium text-slate-700">Tracking Number</label>
                             <div class="flex mt-1">
-                                <input type="text" v-model="newShipment.trackingNumber" required placeholder="e.g., ABC-123" class="flex-grow p-3 border border-slate-300 rounded-l-lg focus:ring-indigo-500 focus:border-indigo-500">
-                                <button type="button" @click="generateTrackingNumber" class="bg-slate-200 text-slate-700 font-semibold px-4 rounded-r-lg hover:bg-slate-300">Generate</button>
+                                <input type="text" v-model="newShipment.trackingNumber" required placeholder="e.g., ABC-123" class="flex-grow p-3 border border-slate-300 rounded-l-lg">
+                                <button type="button" @click="generateTrackingNumber" class="bg-slate-200 text-slate-700 font-semibold px-4 rounded-r-lg">Generate</button>
                             </div>
                         </div>
                         <div>
-                            <label for="description" class="block text-sm font-medium text-slate-700">Description</label>
-                            <input type="text" v-model="newShipment.description" required placeholder="e.g., Electronics from Lagos" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <label class="block text-sm font-medium text-slate-700">Description</label>
+                            <input type="text" v-model="newShipment.description" required placeholder="e.g., Electronics from Lagos" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
                         </div>
                     </div>
-                    <!-- Added Sender and Recipient Name boxes -->
                      <div class="grid md:grid-cols-2 gap-4">
                         <div>
-                            <label for="sender-name" class="block text-sm font-medium text-slate-700">Sender Name</label>
-                            <input type="text" v-model="newShipment.senderName" required placeholder="John Doe" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <label class="block text-sm font-medium text-slate-700">Sender Name</label>
+                            <input type="text" v-model="newShipment.senderName" required placeholder="John Doe" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
                         </div>
                         <div>
-                            <label for="recipient-name" class="block text-sm font-medium text-slate-700">Recipient Name</label>
-                            <input type="text" v-model="newShipment.recipientName" required placeholder="Jane Smith" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <label class="block text-sm font-medium text-slate-700">Recipient Name</label>
+                            <input type="text" v-model="newShipment.recipientName" required placeholder="Jane Smith" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
                         </div>
                     </div>
-                    <!-- Row 2: Dates -->
                      <div class="grid md:grid-cols-2 gap-4">
                         <div>
-                            <label for="start-date" class="block text-sm font-medium text-slate-700">Shipment Start Date & Time</label>
-                            <input type="datetime-local" v-model="newShipment.startDate" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <label class="block text-sm font-medium text-slate-700">Shipment Start Date & Time</label>
+                            <input type="datetime-local" v-model="newShipment.startDate" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
                         </div>
                         <div>
-                            <label for="expected-date" class="block text-sm font-medium text-slate-700">Expected Delivery Date & Time</label>
-                            <input type="datetime-local" v-model="newShipment.expectedDate" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <label class="block text-sm font-medium text-slate-700">Expected Delivery Date & Time</label>
+                            <input type="datetime-local" v-model="newShipment.expectedDate" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
                         </div>
                     </div>
-                    <!-- Row 3: Recipient Info -->
                      <div class="grid md:grid-cols-2 gap-4">
                         <div>
-                            <label for="recipient-email" class="block text-sm font-medium text-slate-700">Recipient Email</label>
-                            <input type="email" v-model="newShipment.recipientEmail" required placeholder="client@example.com" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <label class="block text-sm font-medium text-slate-700">Recipient Email</label>
+                            <input type="email" v-model="newShipment.recipientEmail" required placeholder="client@example.com" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
                         </div>
                          <div>
-                            <label for="recipient-address" class="block text-sm font-medium text-slate-700">Recipient Address</label>
-                            <textarea v-model="newShipment.recipientAddress" required placeholder="123 Main St, Lagos, Nigeria" rows="3" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                            <label class="block text-sm font-medium text-slate-700">Recipient Address</label>
+                            <textarea v-model="newShipment.recipientAddress" required placeholder="123 Main St, Lagos, Nigeria" rows="3" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg"></textarea>
                         </div>
                     </div>
-                    <!-- Row 4: Initial Status -->
                     <div>
-                        <label for="status-history" class="block text-sm font-medium text-slate-700">Initial Status Note</label>
-                        <input type="text" v-model="newShipment.initialStatusNote" required placeholder="e.g., Shipment created, awaiting pickup." class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        <label class="block text-sm font-medium text-slate-700">Initial Status Note</label>
+                        <input type="text" v-model="newShipment.initialStatusNote" required placeholder="e.g., Shipment created, awaiting pickup." class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
                     </div>
 
-                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:bg-indigo-700 transition flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        Create Shipment
-                    </button>
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold shadow-lg">Create Shipment</button>
                 </form>
             </div>
-            <!-- Tracked Shipments List -->
             <div>
                 <h2 class="text-2xl font-bold text-slate-800 mb-4">Your Shipments</h2>
-                <div v-if="shipments.length === 0" class="text-center p-8 bg-white rounded-xl shadow-inner border border-dashed border-slate-300">
+                <div v-if="shipments.length === 0" class="text-center p-8 bg-white rounded-xl">
                     <p class="text-slate-500 font-medium">You haven't created any shipments yet.</p>
                 </div>
                 <div v-else class="space-y-4">
                     <div v-for="shipment in shipments" :key="shipment.id" class="bg-white p-4 rounded-xl card-shadow">
-                        <!-- Shipment Card content -->
                         <div class="flex items-start justify-between">
                             <div>
                                 <p class="text-sm font-semibold uppercase text-indigo-600">{{ shipment.id }}</p>
                                 <p class="text-lg font-bold text-slate-800">{{ shipment.description }}</p>
                             </div>
-                            <button @click="deleteShipment(shipment.id)" class="text-red-400 hover:text-red-600 p-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                        </div>
-                        <div class="mt-4">
-                             <div class="flex justify-between items-center text-xs text-slate-400 mb-2">
-                                <span>{{ shipment.statusHistory[shipment.statusHistory.length - 1].status }}</span>
-                                <span>Last Update: {{ new Date(shipment.lastUpdate.seconds * 1000).toLocaleString() }}</span>
-                            </div>
-                            <div class="w-full bg-slate-200 rounded-full h-2.5">
-                                <div class="h-2.5 rounded-full" :class="getStatusBarClass(shipment.statusHistory[shipment.statusHistory.length - 1].status)" :style="{ width: getStatusWidth(shipment.statusHistory[shipment.statusHistory.length - 1].status) + '%' }"></div>
-                            </div>
+                            <button @click="deleteShipment(shipment.id)" class="text-red-400 hover:text-red-600 p-2">Delete</button>
                         </div>
                         <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
                            <p class="text-sm font-medium text-slate-600">Update Status:</p>
@@ -127,30 +100,26 @@
                                 <option>Pending</option><option>In-Transit</option><option>Out-for-Delivery</option><option>On-Hold</option><option>Delivered</option><option>Exception</option>
                            </select>
                            <div class="grid grid-cols-2 gap-2">
-                                <button @click="updateShipmentStatus(shipment.id)" class="w-full bg-slate-700 text-white py-2 rounded-lg text-sm font-semibold hover:bg-slate-800">Add Update</button>
-                                <button @click="placeShipmentOnHold(shipment.id)" class="w-full bg-amber-500 text-white py-2 rounded-lg text-sm font-semibold hover:bg-amber-600">Place on Hold</button>
+                                <button @click="updateShipmentStatus(shipment.id)" class="w-full bg-slate-700 text-white py-2 rounded-lg text-sm font-semibold">Add Update</button>
+                                <button @click="placeShipmentOnHold(shipment.id)" class="w-full bg-amber-500 text-white py-2 rounded-lg text-sm font-semibold">Place on Hold</button>
                            </div>
-                           <button @click="copyTrackingLink(shipment.id)" class="w-full mt-2 bg-green-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-green-700">Copy Tracking Link</button>
+                           <button @click="copyTrackingLink(shipment.id)" class="w-full mt-2 bg-green-600 text-white py-2 rounded-lg text-sm font-semibold">Copy Tracking Link</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Public Tracking View -->
         <div v-else class="bg-white p-6 rounded-2xl card-shadow">
             <div v-if="!trackedShipment">
                 <p class="text-center text-slate-600 font-semibold text-lg">Loading shipment data...</p>
                  <p class="text-center text-red-500 mt-4" v-if="trackingError">{{ trackingError }}</p>
             </div>
             <div v-else>
-                <!-- Tracking Header -->
                 <div class="pb-4 border-b border-slate-200 mb-4">
                     <p class="text-sm font-semibold uppercase text-indigo-600">{{ trackedShipment.id }}</p>
                     <h2 class="text-2xl font-bold text-slate-800">{{ trackedShipment.description }}</h2>
                 </div>
-                
-                <!-- Shipment Details -->
                 <div class="grid md:grid-cols-2 gap-6 mb-6">
                     <div>
                         <h3 class="font-bold text-slate-700 mb-3">Sender & Recipient</h3>
@@ -169,23 +138,16 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Progress Bar -->
                 <div class="mb-8">
                     <div class="flex justify-between items-center text-sm text-slate-500 mb-2">
-                        <span>Status: <span class="font-bold" :class="'text-' + getStatusBarClass(trackedShipment.statusHistory[trackedShipment.statusHistory.length - 1].status).split('-')[1] + '-700'">{{ trackedShipment.statusHistory[trackedShipment.statusHistory.length - 1].status }}</span></span>
+                        <span>Status: <span class="font-bold">{{ trackedShipment.statusHistory[0].status }}</span></span>
                         <span>Last Update: {{ new Date(trackedShipment.lastUpdate.seconds * 1000).toLocaleString() }}</span>
                     </div>
-                    <div class="w-full bg-slate-200 rounded-full h-4">
-                        <div class="h-4 rounded-full transition-all duration-500" :class="getStatusBarClass(trackedShipment.statusHistory[trackedShipment.statusHistory.length - 1].status)" :style="{ width: getStatusWidth(trackedShipment.statusHistory[trackedShipment.statusHistory.length - 1].status) + '%' }"></div>
-                    </div>
                 </div>
-
-                <!-- Status History -->
                 <h3 class="font-bold text-slate-700 mb-3">Status History</h3>
                 <div class="border-l-2 border-slate-200 ml-2">
-                     <div v-for="(update, index) in trackedShipment.statusHistory.slice().reverse()" :key="index" class="relative pl-8 pb-8">
-                        <div class="absolute -left-[11px] top-1 w-5 h-5 rounded-full" :class="index === 0 ? getStatusBarClass(update.status) + ' ring-8 ring-white' : 'bg-slate-300'"></div>
+                     <div v-for="(update, index) in trackedShipment.statusHistory" :key="index" class="relative pl-8 pb-8">
+                        <div class="absolute -left-[11px] top-1 w-5 h-5 rounded-full" :class="index === 0 ? 'bg-indigo-600 ring-8 ring-white' : 'bg-slate-300'"></div>
                         <p class="font-semibold text-slate-800">{{ update.status }}</p>
                         <p class="text-slate-600 text-sm">{{ update.note }}</p>
                         <p class="text-slate-400 text-xs mt-1">{{ new Date(update.timestamp.seconds * 1000).toLocaleString() }}</p>
@@ -194,7 +156,6 @@
             </div>
         </div>
         
-         <!-- Alert Toast -->
         <div v-if="toast.show" class="fixed bottom-5 right-5 bg-slate-800 text-white py-3 px-5 rounded-lg shadow-xl">
             {{ toast.message }}
         </div>
@@ -223,15 +184,9 @@
             setup() {
                 const shipments = ref([]);
                 const newShipment = ref({
-                    trackingNumber: '',
-                    description: '',
-                    senderName: '',
-                    recipientName: '',
-                    initialStatusNote: '',
-                    startDate: '',
-                    expectedDate: '',
-                    recipientEmail: '',
-                    recipientAddress: ''
+                    trackingNumber: '', description: '', senderName: '', recipientName: '',
+                    initialStatusNote: '', startDate: '', expectedDate: '',
+                    recipientEmail: '', recipientAddress: ''
                 });
                 const isTrackingView = ref(false);
                 const trackedShipment = ref(null);
@@ -239,16 +194,6 @@
                 const toast = ref({ show: false, message: '' });
                 
                 const shipmentsCol = collection(db, 'shipments');
-
-                const getStatusWidth = (status) => {
-                    const statuses = { 'Pending': 10, 'In-Transit': 40, 'Out-for-Delivery': 75, 'On-Hold': 60, 'Delivered': 100, 'Exception': 100 };
-                    return statuses[status.replace(' ', '-')] || 0;
-                };
-                
-                const getStatusBarClass = (status) => {
-                    const statuses = { 'Pending': 'bg-amber-500', 'In-Transit': 'bg-indigo-600', 'Out-for-Delivery': 'bg-amber-500', 'On-Hold': 'bg-amber-500', 'Delivered': 'bg-green-500', 'Exception': 'bg-red-500' };
-                    return statuses[status.replace(' ', '-')] || 'bg-slate-500';
-                }
 
                 const showToast = (message) => {
                     toast.value.message = message;
@@ -279,13 +224,9 @@
                         }
 
                         await setDoc(docRef, {
-                            description: ns.description,
-                            senderName: ns.senderName,
-                            recipientName: ns.recipientName,
-                            startDate: ns.startDate,
-                            expectedDate: ns.expectedDate,
-                            recipientEmail: ns.recipientEmail,
-                            recipientAddress: ns.recipientAddress,
+                            description: ns.description, senderName: ns.senderName, recipientName: ns.recipientName,
+                            startDate: ns.startDate, expectedDate: ns.expectedDate,
+                            recipientEmail: ns.recipientEmail, recipientAddress: ns.recipientAddress,
                             statusHistory: [{
                                 status: 'Pending',
                                 note: ns.initialStatusNote,
@@ -293,7 +234,11 @@
                             }],
                             lastUpdate: serverTimestamp()
                         });
-                        newShipment.value = { trackingNumber: '', description: '', senderName: '', recipientName: '', initialStatusNote: '', startDate: '', expectedDate: '', recipientEmail: '', recipientAddress: '' };
+                        newShipment.value = { 
+                            trackingNumber: '', description: '', senderName: '', recipientName: '', 
+                            initialStatusNote: '', startDate: '', expectedDate: '', 
+                            recipientEmail: '', recipientAddress: '' 
+                        };
                         showToast("Shipment created successfully!");
                     } catch (error) {
                         console.error("Error creating shipment:", error);
@@ -323,10 +268,7 @@
                 const updateShipmentStatus = async (id) => {
                     const note = document.getElementById(`note-${id}`).value;
                     const status = document.getElementById(`status-${id}`).value;
-                    if (!note) {
-                        showToast("Please add a status note.");
-                        return;
-                    }
+                    if (!note) { return showToast("Please add a status note."); }
                     const docRef = doc(db, 'shipments', id);
                     await updateDoc(docRef, {
                         statusHistory: arrayUnion({ status: status, note: note, timestamp: serverTimestamp() }),
@@ -381,8 +323,8 @@
 
                 return {
                     shipments, newShipment, isTrackingView, trackedShipment, trackingError, toast,
-                    addShipment, deleteShipment, updateShipmentStatus, copyTrackingLink, getStatusWidth,
-                    generateTrackingNumber, placeShipmentOnHold, getStatusBarClass
+                    addShipment, deleteShipment, updateShipmentStatus, copyTrackingLink, 
+                    generateTrackingNumber, placeShipmentOnHold
                 };
             }
         }).mount('#app');

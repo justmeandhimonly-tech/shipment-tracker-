@@ -230,7 +230,7 @@
                             statusHistory: [{
                                 status: 'Pending',
                                 note: ns.initialStatusNote,
-                                timestamp: serverTimestamp()
+                                timestamp: new Date() // <-- CORRECTED LINE
                             }],
                             lastUpdate: serverTimestamp()
                         });
@@ -257,7 +257,7 @@
                     const reason = prompt("Reason for placing shipment on hold:");
                     if (reason && reason.trim() !== '') {
                         const docRef = doc(db, 'shipments', id);
-                        const newStatus = { status: 'On-Hold', note: reason, timestamp: serverTimestamp() };
+                        const newStatus = { status: 'On-Hold', note: reason, timestamp: new Date() }; // <-- CORRECTED LINE
                         await updateDoc(docRef, {
                             statusHistory: arrayUnion(newStatus),
                             lastUpdate: serverTimestamp()
@@ -271,7 +271,7 @@
                     const status = document.getElementById(`status-${id}`).value;
                     if (!note) { return showToast("Please add a status note."); }
                     const docRef = doc(db, 'shipments', id);
-                    const newStatus = { status: status, note: note, timestamp: serverTimestamp() };
+                    const newStatus = { status: status, note: note, timestamp: new Date() }; // <-- CORRECTED LINE
                     await updateDoc(docRef, {
                         statusHistory: arrayUnion(newStatus),
                         lastUpdate: serverTimestamp()
@@ -298,7 +298,9 @@
                              if (docSnap.exists()) {
                                 const data = docSnap.data();
                                 // Ensure status history is sorted newest first for client view
-                                data.statusHistory.sort((a,b) => b.timestamp.seconds - a.timestamp.seconds);
+                                if (data.statusHistory) {
+                                    data.statusHistory.sort((a,b) => b.timestamp.seconds - a.timestamp.seconds);
+                                }
                                 trackedShipment.value = { id: docSnap.id, ...data };
                             } else {
                                 trackingError.value = "No shipment found.";

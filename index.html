@@ -4,222 +4,353 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Shipment Tracker</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons (High quality icons) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .card-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* FedEx-style Purple/Orange Theme */
+        :root {
+            --primary: #4D148C; /* Deep Purple */
+            --secondary: #FF6200; /* Vivid Orange */
+            --accent: #F2F5F8;
+        }
+
+        .bg-primary { background-color: var(--primary); }
+        .text-primary { color: var(--primary); }
+        .bg-secondary { background-color: var(--secondary); }
+        .text-secondary { color: var(--secondary); }
+
+        /* Smooth Card Shadows */
+        .premium-shadow { 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 
+                        0 10px 15px -3px rgba(0, 0, 0, 0.05); 
+        }
+
+        /* Timeline Connector Line */
+        .timeline-line {
+            position: absolute;
+            left: 24px;
+            top: 40px;
+            bottom: -20px;
+            width: 2px;
+            background-color: #e5e7eb;
+            z-index: 0;
+        }
+        .timeline-item:last-child .timeline-line { display: none; }
+
         [v-cloak] { display: none; }
-        .list-enter-active, .list-leave-active { transition: all 0.5s ease; }
-        .list-enter-from, .list-leave-to { opacity: 0; transform: translateX(30px); }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Transitions */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
     </style>
 </head>
-<body class="bg-slate-100">
-    <div id="app" v-cloak class="mx-auto p-4">
-        <!-- HEADER -->
-        <header class="bg-white p-4 rounded-xl shadow-md sticky top-4 z-10 mb-8 flex justify-between items-center">
-            <div>
-                <h1 class="text-3xl font-extrabold text-indigo-700 flex items-center">
-                    <span class="mr-3 text-4xl">🌍</span>
-                    <span v-if="!isTrackingView">Global Shipment Tracker</span>
-                    <span v-else>Tracking Details</span>
-                </h1>
-                <p v-if="!isTrackingView" class="text-sm text-slate-500 mt-1">Manage all your shipments securely.</p>
-            </div>
-            <!-- Security Badge (Only visible on Admin Dashboard) -->
-            <div v-if="!isTrackingView" class="hidden md:flex items-center text-xs font-bold px-3 py-1 bg-slate-100 text-slate-600 rounded-full border border-slate-200">
-                <span class="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>
-                SECURE MODE
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <div id="app" v-cloak class="flex-grow">
+        
+        <!-- HEADER / HERO SECTION -->
+        <header class="bg-primary text-white pt-6 pb-16 px-4 md:px-8 shadow-lg relative overflow-hidden">
+            <!-- Decorative circle -->
+            <div class="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-white opacity-5 rounded-full pointer-events-none"></div>
+            
+            <div class="max-w-5xl mx-auto relative z-10">
+                <div class="flex justify-between items-center mb-8">
+                    <div class="flex items-center space-x-2">
+                        <i class="ph-fill ph-package text-3xl text-secondary"></i>
+                        <h1 class="text-2xl font-bold tracking-tight">Global<span class="font-light text-slate-300">Logistics</span></h1>
+                    </div>
+                    <!-- Admin Badge -->
+                    <div v-if="!isTrackingView" class="hidden md:flex items-center px-3 py-1 bg-white/10 rounded-full border border-white/20 backdrop-blur-sm">
+                        <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                        <span class="text-xs font-semibold tracking-wide uppercase">Admin Console</span>
+                    </div>
+                </div>
+
+                <!-- Hero Text (Only on Tracking View) -->
+                <div v-if="isTrackingView" class="text-center md:text-left mb-6">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-2">Track your shipment</h2>
+                    <p class="text-slate-300">Real-time updates across the globe.</p>
+                </div>
             </div>
         </header>
 
-        <!-- ADMIN DASHBOARD VIEW -->
-        <div v-if="!isTrackingView" class="space-y-8">
-             <div class="bg-white p-6 rounded-2xl card-shadow border-t-4 border-indigo-500">
-                <h2 class="text-xl font-bold text-slate-800 mb-4">Create New Shipment</h2>
-                <form @submit.prevent="addShipment" class="space-y-4">
-                    <div class="grid md:grid-cols-2 gap-4">
-                         <div>
-                            <label class="block text-sm font-medium text-slate-700">Tracking Number</label>
-                            <div class="flex mt-1">
-                                <input type="text" v-model="newShipment.trackingNumber" required class="flex-grow p-3 border border-slate-300 rounded-l-lg">
-                                <button type="button" @click="generateTrackingNumber" class="bg-slate-200 text-slate-700 font-semibold px-4 rounded-r-lg hover:bg-slate-300">Generate</button>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700">Description</label>
-                            <input type="text" v-model="newShipment.description" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
-                        </div>
-                    </div>
-                     <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700">Sender Name</label>
-                            <input type="text" v-model="newShipment.senderName" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700">Recipient Name</label>
-                            <input type="text" v-model="newShipment.recipientName" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
-                        </div>
-                    </div>
-                     <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700">Shipment Start Date & Time</label>
-                            <input type="datetime-local" v-model="newShipment.startDate" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700">Expected Delivery Date & Time</label>
-                            <input type="datetime-local" v-model="newShipment.expectedDate" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
-                        </div>
-                    </div>
-                     <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700">Recipient Email</label>
-                            <input type="email" v-model="newShipment.recipientEmail" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
-                        </div>
-                         <div>
-                            <label class="block text-sm font-medium text-slate-700">Recipient Address</label>
-                            <textarea v-model="newShipment.recipientAddress" required rows="3" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg"></textarea>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700">Initial Status Note</label>
-                        <input type="text" v-model="newShipment.initialStatusNote" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
-                    </div>
+        <!-- MAIN CONTENT CONTAINER (Overlaps Header) -->
+        <main class="max-w-5xl mx-auto px-4 -mt-10 mb-12 relative z-20">
 
-                    <button type="submit" :disabled="loading" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors">
-                        <span v-if="loading">Processing...</span>
-                        <span v-else>Create Shipment</span>
-                    </button>
-                </form>
-            </div>
-
-            <!-- List of Shipments -->
-            <div>
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold text-slate-800">Your Shipments</h2>
-                    
-                    <!-- ADMIN REFRESH BUTTON -->
-                    <button @click="fetchShipments(true)" class="flex items-center text-indigo-600 hover:text-indigo-800 text-sm font-semibold bg-indigo-50 px-3 py-2 rounded-lg transition-colors">
-                        <span class="mr-1 text-lg" :class="{ 'spin': loading }">↻</span> Refresh List
-                    </button>
-                </div>
+            <!-- ADMIN DASHBOARD -->
+            <div v-if="!isTrackingView">
                 
-                <div v-if="loading && shipments.length === 0" class="text-center p-8 text-slate-500 animate-pulse">
-                    Loading data securely...
+                <!-- Create Shipment Card -->
+                <div class="bg-white rounded-xl premium-shadow overflow-hidden mb-8">
+                    <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-700 flex items-center">
+                            <i class="ph ph-plus-circle mr-2 text-xl text-primary"></i> Create New Shipment
+                        </h3>
+                    </div>
+                    <div class="p-6 md:p-8">
+                        <form @submit.prevent="addShipment" class="space-y-6">
+                            <!-- Tracking # Row -->
+                            <div class="grid md:grid-cols-12 gap-6">
+                                <div class="md:col-span-5">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tracking Number</label>
+                                    <div class="flex">
+                                        <input type="text" v-model="newShipment.trackingNumber" class="font-mono bg-slate-50 flex-grow p-3 border border-slate-200 rounded-l-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="GTS-XXXXXX">
+                                        <button type="button" @click="generateTrackingNumber" class="bg-slate-200 hover:bg-slate-300 text-slate-600 px-4 rounded-r-lg font-medium text-sm transition-colors">
+                                            Auto
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="md:col-span-7">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Shipment Description</label>
+                                    <input type="text" v-model="newShipment.description" class="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="e.g. Electronics Package">
+                                </div>
+                            </div>
+
+                            <!-- Details Grid -->
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Sender Name</label>
+                                        <input type="text" v-model="newShipment.senderName" class="w-full p-3 border border-slate-200 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Recipient Name</label>
+                                        <input type="text" v-model="newShipment.recipientName" class="w-full p-3 border border-slate-200 rounded-lg">
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Start Date</label>
+                                        <input type="datetime-local" v-model="newShipment.startDate" class="w-full p-3 border border-slate-200 rounded-lg text-slate-600">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Est. Delivery</label>
+                                        <input type="datetime-local" v-model="newShipment.expectedDate" class="w-full p-3 border border-slate-200 rounded-lg text-slate-600">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Address Section -->
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Recipient Email</label>
+                                    <input type="email" v-model="newShipment.recipientEmail" class="w-full p-3 border border-slate-200 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Delivery Address</label>
+                                    <textarea v-model="newShipment.recipientAddress" rows="2" class="w-full p-3 border border-slate-200 rounded-lg"></textarea>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Initial Status</label>
+                                <input type="text" v-model="newShipment.initialStatusNote" class="w-full p-3 border border-slate-200 rounded-lg" placeholder="e.g. Shipment received at origin facility">
+                            </div>
+
+                            <button type="submit" :disabled="loading" class="w-full bg-secondary hover:bg-orange-600 text-white font-bold py-4 rounded-lg shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.99] flex justify-center items-center">
+                                <i v-if="loading" class="ph ph-spinner spin mr-2 text-xl"></i>
+                                {{ loading ? 'Processing...' : 'Create Shipment' }}
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
-                <div v-else-if="shipments.length === 0" class="text-center p-8 bg-white rounded-xl card-shadow">
-                    <p class="text-slate-500 font-medium">You haven't created any shipments yet.</p>
+                <!-- Shipment List -->
+                <div class="flex justify-between items-end mb-6">
+                    <h3 class="text-xl font-bold text-slate-800">Recent Shipments</h3>
+                    <button @click="fetchShipments(true)" class="text-primary hover:text-purple-800 text-sm font-semibold flex items-center bg-white px-3 py-2 rounded-lg shadow-sm">
+                        <i class="ph ph-arrows-clockwise mr-2" :class="{ 'spin': loading }"></i> Refresh
+                    </button>
+                </div>
+
+                <div v-if="loading && shipments.length === 0" class="text-center py-12">
+                     <i class="ph ph-circle-notch text-4xl text-slate-300 spin"></i>
                 </div>
 
                 <div v-else class="space-y-4">
-                    <transition-group name="list">
-                        <div v-for="shipment in sortedShipments" :key="shipment.id" class="bg-white p-4 rounded-xl card-shadow mb-4">
-                            <div class="flex items-start justify-between">
-                                <div>
-                                    <p class="text-sm font-semibold uppercase text-indigo-600">{{ shipment.id }}</p>
-                                    <p class="text-lg font-bold text-slate-800">{{ shipment.description }}</p>
+                    <div v-for="shipment in sortedShipments" :key="shipment.id" class="bg-white rounded-xl premium-shadow p-5 border-l-4 border-primary hover:shadow-lg transition-shadow">
+                        <div class="flex flex-col md:flex-row justify-between md:items-center mb-4">
+                            <div>
+                                <div class="flex items-center mb-1">
+                                    <span class="font-mono text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded mr-3">{{ shipment.id }}</span>
+                                    <span class="text-xs text-slate-400 flex items-center"><i class="ph ph-calendar-blank mr-1"></i> {{ formatDateShort(shipment.lastUpdate) }}</span>
                                 </div>
-                                <button @click="deleteShipment(shipment.id)" class="text-red-400 hover:text-red-600 p-2 text-sm font-medium">Delete</button>
+                                <h4 class="text-lg font-bold text-slate-800">{{ shipment.description }}</h4>
                             </div>
-                            
-                            <!-- Update Actions -->
-                            <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                               <p class="text-sm font-medium text-slate-600">Update Status:</p>
-                               <input type="text" :id="'note-' + shipment.id" placeholder="Add a new status note..." class="w-full text-sm p-2 border border-slate-300 rounded-lg">
-                               <select :id="'status-' + shipment.id" class="w-full text-sm p-2 border border-slate-300 rounded-lg bg-white">
-                                    <option>Pending</option><option>In-Transit</option><option>Out-for-Delivery</option><option>On-Hold</option><option>Delivered</option><option>Exception</option>
-                               </select>
-                               <div class="grid grid-cols-2 gap-2">
-                                    <button @click="updateShipmentStatus(shipment.id, 'status')" :disabled="loading" class="w-full bg-slate-700 hover:bg-slate-800 text-white py-2 rounded-lg text-sm font-semibold transition-colors">
-                                        Update
-                                    </button>
-                                    <button @click="updateShipmentStatus(shipment.id, 'hold')" :disabled="loading" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-2 rounded-lg text-sm font-semibold transition-colors">
-                                        Hold
-                                    </button>
-                               </div>
-                               <button @click="copyTrackingLink(shipment.id)" class="w-full mt-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-semibold transition-colors">
-                                   Copy Tracking Link
-                               </button>
+                            <div class="flex items-center space-x-2 mt-3 md:mt-0">
+                                <button @click="copyTrackingLink(shipment.id)" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Copy Link"><i class="ph ph-link text-xl"></i></button>
+                                <button @click="deleteShipment(shipment.id)" class="p-2 text-slate-400 hover:text-red-500 transition-colors" title="Delete"><i class="ph ph-trash text-xl"></i></button>
                             </div>
                         </div>
-                    </transition-group>
+                        
+                        <!-- Quick Actions Area -->
+                        <div class="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                             <div class="flex flex-col md:flex-row gap-3">
+                                <input type="text" :id="'note-' + shipment.id" placeholder="Update status note..." class="flex-grow text-sm p-2.5 border border-slate-200 rounded-lg">
+                                <select :id="'status-' + shipment.id" class="text-sm p-2.5 border border-slate-200 rounded-lg bg-white">
+                                    <option>In-Transit</option><option>Arrived at Facility</option><option>Out-for-Delivery</option><option>Delivered</option><option>On-Hold</option><option>Exception</option>
+                                </select>
+                                <button @click="updateShipmentStatus(shipment.id, 'status')" class="bg-primary hover:bg-purple-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">Update</button>
+                             </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- TRACKING VIEW (Client-facing) -->
-        <div v-else class="bg-white p-6 rounded-2xl card-shadow max-w-2xl mx-auto">
-            <div v-if="loading && !trackedShipment" class="text-center p-8">
-                 <p class="text-slate-600 font-semibold text-lg animate-pulse">Loading shipment details...</p>
-            </div>
-            
-            <div v-else-if="trackingError">
-                 <div class="text-center p-8">
-                     <p class="text-4xl mb-2">😕</p>
-                     <p class="text-red-500 font-bold mb-4">{{ trackingError }}</p>
-                     <button @click="isTrackingView = false; window.location.hash = ''" class="text-indigo-600 font-semibold hover:underline">
-                         Return to Dashboard
-                     </button>
-                 </div>
-            </div>
-            
-            <div v-else-if="trackedShipment">
-                <div class="pb-4 border-b border-slate-200 mb-4 flex justify-between items-start">
-                    <div>
-                        <p class="text-sm font-semibold uppercase text-indigo-600">{{ trackedShipment.id }}</p>
-                        <h2 class="text-2xl font-bold text-slate-800">{{ trackedShipment.description }}</h2>
-                    </div>
+            <!-- TRACKING VIEW (CLIENT FACING) -->
+            <div v-else>
+                <!-- Search/Result Card -->
+                <div class="bg-white rounded-xl premium-shadow overflow-hidden min-h-[400px]">
                     
-                    <!-- CLIENT REFRESH BUTTON -->
-                    <button @click="fetchOneShipment(trackedShipment.id, true)" class="flex items-center text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors">
-                        <span class="mr-1.5 text-lg" :class="{ 'spin': loading }">↻</span> Refresh Status
-                    </button>
-                </div>
-                
-                <div class="grid md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                        <h3 class="font-bold text-slate-700 mb-3 border-b pb-1">Delivery Details</h3>
-                        <div class="text-sm text-slate-600 space-y-2">
-                           <p><span class="font-semibold text-slate-900">From:</span> {{ trackedShipment.senderName }}</p>
-                           <p><span class="font-semibold text-slate-900">To:</span> {{ trackedShipment.recipientName }}</p>
-                           <p><span class="font-semibold text-slate-900">Email:</span> {{ trackedShipment.recipientEmail }}</p>
-                           <p><span class="font-semibold text-slate-900">Address:</span><br>{{ trackedShipment.recipientAddress }}</p>
-                        </div>
+                    <!-- Loading State -->
+                    <div v-if="loading && !trackedShipment" class="flex flex-col items-center justify-center h-64">
+                         <i class="ph ph-package text-5xl text-primary animate-bounce mb-4"></i>
+                         <p class="text-slate-500 font-medium">Locating shipment details...</p>
                     </div>
-                    <div>
-                        <h3 class="font-bold text-slate-700 mb-3 border-b pb-1">Timeline</h3>
-                        <div class="text-sm text-slate-600 space-y-2">
-                           <p><span class="font-semibold text-slate-900">Shipment Date:</span><br>{{ formatDate(trackedShipment.startDate) }}</p>
-                           <p><span class="font-semibold text-slate-900">Expected Delivery:</span><br>{{ formatDate(trackedShipment.expectedDate) }}</p>
+
+                    <!-- Error State -->
+                    <div v-else-if="trackingError" class="flex flex-col items-center justify-center h-64 p-8 text-center">
+                        <div class="bg-red-50 p-4 rounded-full mb-4">
+                            <i class="ph ph-warning-circle text-4xl text-red-500"></i>
                         </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Shipment Not Found</h3>
+                        <p class="text-slate-500 mb-6">{{ trackingError }}</p>
+                        <button @click="isTrackingView = false; window.location.hash = ''" class="text-primary font-semibold hover:underline">
+                            Return to Dashboard
+                        </button>
                     </div>
-                </div>
-                
-                <h3 class="font-bold text-slate-700 mb-4 border-b pb-1">Status History</h3>
-                <div class="border-l-2 border-slate-200 ml-2 space-y-0">
-                     <transition-group name="list">
-                         <div v-for="(update, index) in sortedHistory" :key="index" class="relative pl-8 pb-8 last:pb-0">
-                            <!-- Dot Indicator -->
-                            <div class="absolute -left-[11px] top-1 w-5 h-5 rounded-full border-2 border-white" 
-                                 :class="index === 0 ? 'bg-indigo-600 shadow-lg ring-2 ring-indigo-100' : 'bg-slate-300'">
+
+                    <!-- Result State -->
+                    <div v-else-if="trackedShipment">
+                        <!-- Top Bar: Status & Refresh -->
+                        <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex flex-col md:flex-row justify-between md:items-center gap-4">
+                            <div>
+                                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tracking Number</p>
+                                <p class="font-mono text-xl font-bold text-primary">{{ trackedShipment.id }}</p>
                             </div>
-                            
-                            <p class="font-bold text-slate-800">{{ update.status }}</p>
-                            <p class="text-slate-600 text-sm mb-1">{{ update.note }}</p>
-                            <p class="text-slate-400 text-xs uppercase tracking-wide">{{ formatDate(update.timestamp) }}</p>
+                            <button @click="fetchOneShipment(trackedShipment.id, true)" class="flex items-center text-slate-500 hover:text-primary text-sm font-medium transition-colors">
+                                <i class="ph ph-arrows-clockwise mr-2" :class="{ 'spin': loading }"></i> Update Status
+                            </button>
                         </div>
-                    </transition-group>
+
+                        <div class="p-6 md:p-8">
+                            <!-- Header Info -->
+                            <div class="mb-10">
+                                <h2 class="text-2xl font-bold text-slate-800 mb-1">{{ trackedShipment.description }}</h2>
+                                <p class="text-sm text-slate-500">Expected Delivery: <span class="font-semibold text-slate-800">{{ formatDate(trackedShipment.expectedDate) }}</span></p>
+                            </div>
+
+                            <!-- Progress Bar (Visual) -->
+                            <div class="mb-12 relative px-2">
+                                <div class="h-2 bg-slate-100 rounded-full w-full absolute top-1/2 transform -translate-y-1/2 z-0"></div>
+                                <div class="h-2 bg-green-500 rounded-full absolute top-1/2 transform -translate-y-1/2 z-0 transition-all duration-1000" :style="{ width: getProgressWidth(trackedShipment.statusHistory) + '%' }"></div>
+                                
+                                <div class="relative z-10 flex justify-between w-full">
+                                    <!-- Step 1 -->
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-8 h-8 rounded-full bg-green-500 border-4 border-white shadow-sm flex items-center justify-center text-white">
+                                            <i class="ph-fill ph-check text-xs"></i>
+                                        </div>
+                                        <p class="text-xs font-bold text-slate-600 mt-2">Picked Up</p>
+                                    </div>
+                                    <!-- Step 2 -->
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-8 h-8 rounded-full border-4 border-white shadow-sm flex items-center justify-center" 
+                                            :class="hasStatus(trackedShipment, 'In-Transit') ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-400'">
+                                            <i class="ph-fill" :class="hasStatus(trackedShipment, 'In-Transit') ? 'ph-check' : 'ph-truck'"></i>
+                                        </div>
+                                        <p class="text-xs font-bold mt-2" :class="hasStatus(trackedShipment, 'In-Transit') ? 'text-slate-600' : 'text-slate-300'">In Transit</p>
+                                    </div>
+                                    <!-- Step 3 -->
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-8 h-8 rounded-full border-4 border-white shadow-sm flex items-center justify-center"
+                                             :class="hasStatus(trackedShipment, 'Delivered') ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-400'">
+                                            <i class="ph-fill" :class="hasStatus(trackedShipment, 'Delivered') ? 'ph-check' : 'ph-house'"></i>
+                                        </div>
+                                        <p class="text-xs font-bold mt-2" :class="hasStatus(trackedShipment, 'Delivered') ? 'text-slate-600' : 'text-slate-300'">Delivered</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid lg:grid-cols-3 gap-10">
+                                <!-- LEFT COL: Timeline -->
+                                <div class="lg:col-span-2">
+                                    <h3 class="text-lg font-bold text-slate-800 mb-6 border-b border-slate-100 pb-2">Travel History</h3>
+                                    
+                                    <div class="relative pl-4">
+                                        <div v-for="(update, index) in sortedHistory" :key="index" class="timeline-item relative pl-10 pb-10">
+                                            <!-- Line -->
+                                            <div class="timeline-line"></div>
+                                            
+                                            <!-- Icon -->
+                                            <div class="absolute left-0 top-0 w-12 h-12 flex items-center justify-center bg-white z-10">
+                                                <div class="w-10 h-10 rounded-full flex items-center justify-center border-2" 
+                                                     :class="index === 0 ? 'bg-primary text-white border-primary shadow-lg shadow-purple-200' : 'bg-white text-slate-400 border-slate-200'">
+                                                    <i class="ph-fill text-lg" :class="getStatusIcon(update.status)"></i>
+                                                </div>
+                                            </div>
+
+                                            <!-- Content -->
+                                            <div class="pt-1">
+                                                <p class="font-bold text-slate-800 text-base">{{ update.status }}</p>
+                                                <p class="text-slate-600 text-sm mb-1">{{ update.note }}</p>
+                                                <p class="text-xs text-slate-400 font-mono">{{ formatDate(update.timestamp) }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- RIGHT COL: Info -->
+                                <div class="lg:col-span-1">
+                                    <div class="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-6">
+                                        <div>
+                                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">From</h4>
+                                            <p class="font-semibold text-slate-800">{{ trackedShipment.senderName }}</p>
+                                            <p class="text-sm text-slate-500">Origin Facility</p>
+                                        </div>
+                                        <div class="border-t border-slate-200 pt-4">
+                                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">To</h4>
+                                            <p class="font-semibold text-slate-800">{{ trackedShipment.recipientName }}</p>
+                                            <p class="text-sm text-slate-500 whitespace-pre-line">{{ trackedShipment.recipientAddress }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-6 text-center">
+                                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TRACK" alt="QR Code" class="w-24 h-24 mx-auto opacity-80 mix-blend-multiply">
+                                        <p class="text-xs text-slate-400 mt-2">Scan to track on mobile</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        </main>
         
-        <!-- Toast Notification -->
-        <div v-if="toast.show" class="fixed bottom-5 right-5 bg-slate-800 text-white py-3 px-5 rounded-lg shadow-xl z-50 flex items-center transition-all">
-            <span class="mr-2">🔔</span> {{ toast.message }}
-        </div>
+        <!-- FOOTER -->
+        <footer class="bg-white border-t border-slate-200 py-8 mt-auto">
+            <div class="max-w-5xl mx-auto px-4 text-center">
+                <p class="text-slate-400 text-sm">&copy; 2024 Global Logistics Inc. All rights reserved.</p>
+            </div>
+        </footer>
+
+        <!-- TOAST -->
+        <transition name="fade">
+            <div v-if="toast.show" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white py-3 px-6 rounded-full shadow-2xl z-50 flex items-center space-x-3">
+                <i class="ph-fill ph-check-circle text-green-400 text-xl"></i>
+                <span class="font-medium text-sm">{{ toast.message }}</span>
+            </div>
+        </transition>
+
     </div>
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -240,10 +371,36 @@
                 const trackingError = ref('');
                 const toast = ref({ show: false, message: '' });
 
-                // POINT TO YOUR LOCAL NETLIFY FUNCTION
+                // YOUR NETLIFY BACKEND
                 const API_URL = '/.netlify/functions/shipments';
 
-                // --- COMPUTED PROPERTIES ---
+                // --- HELPERS FOR UI ---
+                const getStatusIcon = (status) => {
+                    const map = {
+                        'Pending': 'ph-hourglass',
+                        'In-Transit': 'ph-truck',
+                        'Out-for-Delivery': 'ph-moped',
+                        'Delivered': 'ph-package',
+                        'On-Hold': 'ph-hand-palm',
+                        'Exception': 'ph-warning'
+                    };
+                    return map[status] || 'ph-circle';
+                };
+
+                const hasStatus = (shipment, statusCheck) => {
+                    if (!shipment || !shipment.statusHistory) return false;
+                    return shipment.statusHistory.some(h => h.status === statusCheck);
+                };
+
+                const getProgressWidth = (history) => {
+                    if (!history) return 0;
+                    const statuses = history.map(h => h.status);
+                    if (statuses.includes('Delivered')) return 100;
+                    if (statuses.includes('Out-for-Delivery')) return 75;
+                    if (statuses.includes('In-Transit')) return 50;
+                    return 10; // Just picked up
+                };
+
                 const sortedShipments = computed(() => {
                     return shipments.value.slice().sort((a, b) => {
                          const dateA = new Date(a.lastUpdate || 0);
@@ -259,13 +416,17 @@
                     });
                 });
 
-                // --- HELPERS ---
                 const formatDate = (dateString) => {
                     if (!dateString) return '';
                     return new Date(dateString).toLocaleString('en-US', { 
-                        month: 'short', day: 'numeric', year: 'numeric', 
+                        weekday: 'short', month: 'short', day: 'numeric', 
                         hour: 'numeric', minute: '2-digit' 
                     });
+                };
+                
+                const formatDateShort = (dateString) => {
+                    if (!dateString) return '';
+                    return new Date(dateString).toLocaleDateString();
                 };
 
                 const showToast = (message) => {
@@ -280,27 +441,21 @@
                     newShipment.value.trackingNumber = `${prefix}-${randomPart}`;
                 };
 
-                // --- API FUNCTIONS (MANUAL TRIGGER ONLY) ---
+                // --- API FUNCTIONS (Manual Refresh) ---
 
-                // 1. Fetch All (Called on load + Refresh Button)
                 const fetchShipments = async (showSpinner = false) => {
                     if (showSpinner) loading.value = true;
                     try {
                         const res = await fetch(API_URL);
                         const data = await res.json();
-                        if (res.ok) {
-                            shipments.value = data;
-                        } else {
-                            console.error("API Error", data);
-                        }
+                        if (res.ok) shipments.value = data;
                     } catch (e) {
-                        console.error("Network Error:", e);
+                        console.error(e);
                     } finally {
                         if (showSpinner) loading.value = false;
                     }
                 };
 
-                // 2. Fetch One (Called on hash change + Refresh Button in tracking view)
                 const fetchOneShipment = async (id, showSpinner = false) => {
                     if (showSpinner) loading.value = true;
                     if (showSpinner) trackingError.value = '';
@@ -311,13 +466,12 @@
                         if (!res.ok) throw new Error(data.error || "Not found");
                         trackedShipment.value = data;
                     } catch (e) {
-                        trackingError.value = "Shipment not found or could not be loaded.";
+                        trackingError.value = "We could not find a shipment with that tracking number.";
                     } finally {
                         if (showSpinner) loading.value = false;
                     }
                 };
 
-                // 3. Create
                 const addShipment = async () => {
                     loading.value = true;
                     try {
@@ -339,8 +493,7 @@
                             body: JSON.stringify(payload)
                         });
 
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error);
+                        if (!res.ok) throw new Error("Failed to create");
 
                         newShipment.value = { 
                             trackingNumber: '', description: '', senderName: '', recipientName: '', 
@@ -348,7 +501,6 @@
                             recipientEmail: '', recipientAddress: '' 
                         };
                         showToast("Shipment created successfully!");
-                        // Manually refresh the list after adding
                         fetchShipments(true);
                     } catch (error) {
                         showToast(`Error: ${error.message}`);
@@ -357,31 +509,24 @@
                     }
                 };
 
-                // 4. Delete
                 const deleteShipment = async (id) => {
-                    if (!confirm("Are you sure you want to delete this shipment?")) return;
+                    if (!confirm("Are you sure? This cannot be undone.")) return;
                     loading.value = true;
                     try {
                         await fetch(`${API_URL}?id=${id}`, { method: 'DELETE' });
                         showToast("Shipment deleted.");
                         fetchShipments(true);
                     } catch (e) {
-                        showToast("Error deleting shipment");
                         loading.value = false;
                     }
                 };
                 
-                // 5. Update Status
                 const updateShipmentStatus = async (id, type) => {
                     let note, status;
-                    if (type === 'hold') {
-                        note = prompt("Please enter the reason for the hold:");
-                        if (!note) return;
-                        status = 'On-Hold';
-                    } else {
+                    if (type === 'status') {
                         note = document.getElementById(`note-${id}`).value;
                         status = document.getElementById(`status-${id}`).value;
-                        if (!note) return showToast("Please add a status note first");
+                        if (!note) return showToast("Please add a note");
                     }
 
                     loading.value = true;
@@ -397,18 +542,18 @@
                             body: JSON.stringify({ statusUpdate })
                         });
 
-                        if (type !== 'hold') document.getElementById(`note-${id}`).value = '';
-                        showToast("Status updated successfully!");
+                        document.getElementById(`note-${id}`).value = '';
+                        showToast("Shipment status updated!");
                         fetchShipments(true);
                     } catch (e) {
-                        showToast("Update failed. Please try again.");
                         loading.value = false;
+                        showToast("Update failed");
                     }
                 };
                 
                 const copyTrackingLink = (id) => {
                     const url = `${window.location.origin}${window.location.pathname}#${id}`;
-                    navigator.clipboard.writeText(url).then(() => showToast("Tracking link copied to clipboard!"));
+                    navigator.clipboard.writeText(url).then(() => showToast("Link copied to clipboard"));
                 };
 
                 const handleRouting = () => {
@@ -418,10 +563,7 @@
                         fetchOneShipment(trackingId, true);
                     } else {
                         isTrackingView.value = false;
-                        // Only fetch if list is empty to save bandwidth, otherwise user can hit refresh
-                        if (shipments.value.length === 0) {
-                            fetchShipments(true);
-                        }
+                        if (shipments.value.length === 0) fetchShipments(true);
                     }
                 };
 
@@ -437,7 +579,8 @@
                 return {
                     shipments, newShipment, isTrackingView, trackedShipment, trackingError, toast, loading,
                     addShipment, deleteShipment, updateShipmentStatus, copyTrackingLink, 
-                    generateTrackingNumber, sortedShipments, sortedHistory, fetchShipments, fetchOneShipment, formatDate
+                    generateTrackingNumber, sortedShipments, sortedHistory, fetchShipments, fetchOneShipment, 
+                    formatDate, formatDateShort, getStatusIcon, hasStatus, getProgressWidth
                 };
             }
         }).mount('#app');

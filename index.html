@@ -10,19 +10,32 @@
         body { font-family: 'Inter', sans-serif; }
         .card-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
         [v-cloak] { display: none; }
+        .list-enter-active, .list-leave-active { transition: all 0.5s ease; }
+        .list-enter-from, .list-leave-to { opacity: 0; transform: translateX(30px); }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-slate-100">
     <div id="app" v-cloak class="mx-auto p-4">
-        <header class="bg-white p-4 rounded-xl shadow-md sticky top-4 z-10 mb-8">
-            <h1 class="text-3xl font-extrabold text-indigo-700 flex items-center">
-                <span class="mr-3 text-4xl">🌍</span>
-                <span v-if="!isTrackingView">Global Shipment Tracker</span>
-                <span v-else>Tracking Details</span>
-            </h1>
-            <p v-if="!isTrackingView" class="text-sm text-slate-500 mt-1">Manage all your shipments in real-time.</p>
+        <!-- HEADER -->
+        <header class="bg-white p-4 rounded-xl shadow-md sticky top-4 z-10 mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-extrabold text-indigo-700 flex items-center">
+                    <span class="mr-3 text-4xl">🌍</span>
+                    <span v-if="!isTrackingView">Global Shipment Tracker</span>
+                    <span v-else>Tracking Details</span>
+                </h1>
+                <p v-if="!isTrackingView" class="text-sm text-slate-500 mt-1">Manage all your shipments securely.</p>
+            </div>
+            <!-- Security Badge (Only visible on Admin Dashboard) -->
+            <div v-if="!isTrackingView" class="hidden md:flex items-center text-xs font-bold px-3 py-1 bg-slate-100 text-slate-600 rounded-full border border-slate-200">
+                <span class="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>
+                SECURE MODE
+            </div>
         </header>
 
+        <!-- ADMIN DASHBOARD VIEW -->
         <div v-if="!isTrackingView" class="space-y-8">
              <div class="bg-white p-6 rounded-2xl card-shadow border-t-4 border-indigo-500">
                 <h2 class="text-xl font-bold text-slate-800 mb-4">Create New Shipment</h2>
@@ -32,7 +45,7 @@
                             <label class="block text-sm font-medium text-slate-700">Tracking Number</label>
                             <div class="flex mt-1">
                                 <input type="text" v-model="newShipment.trackingNumber" required class="flex-grow p-3 border border-slate-300 rounded-l-lg">
-                                <button type="button" @click="generateTrackingNumber" class="bg-slate-200 text-slate-700 font-semibold px-4 rounded-r-lg">Generate</button>
+                                <button type="button" @click="generateTrackingNumber" class="bg-slate-200 text-slate-700 font-semibold px-4 rounded-r-lg hover:bg-slate-300">Generate</button>
                             </div>
                         </div>
                         <div>
@@ -75,107 +88,148 @@
                         <input type="text" v-model="newShipment.initialStatusNote" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg">
                     </div>
 
-                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold shadow-lg">Create Shipment</button>
+                    <button type="submit" :disabled="loading" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+                        <span v-if="loading">Processing...</span>
+                        <span v-else>Create Shipment</span>
+                    </button>
                 </form>
             </div>
+
+            <!-- List of Shipments -->
             <div>
-                <h2 class="text-2xl font-bold text-slate-800 mb-4">Your Shipments</h2>
-                <div v-if="shipments.length === 0" class="text-center p-8 bg-white rounded-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-slate-800">Your Shipments</h2>
+                    
+                    <!-- ADMIN REFRESH BUTTON -->
+                    <button @click="fetchShipments(true)" class="flex items-center text-indigo-600 hover:text-indigo-800 text-sm font-semibold bg-indigo-50 px-3 py-2 rounded-lg transition-colors">
+                        <span class="mr-1 text-lg" :class="{ 'spin': loading }">↻</span> Refresh List
+                    </button>
+                </div>
+                
+                <div v-if="loading && shipments.length === 0" class="text-center p-8 text-slate-500 animate-pulse">
+                    Loading data securely...
+                </div>
+
+                <div v-else-if="shipments.length === 0" class="text-center p-8 bg-white rounded-xl card-shadow">
                     <p class="text-slate-500 font-medium">You haven't created any shipments yet.</p>
                 </div>
+
                 <div v-else class="space-y-4">
-                    <div v-for="shipment in sortedShipments" :key="shipment.id" class="bg-white p-4 rounded-xl card-shadow">
-                        <div class="flex items-start justify-between">
-                            <div>
-                                <p class="text-sm font-semibold uppercase text-indigo-600">{{ shipment.id }}</p>
-                                <p class="text-lg font-bold text-slate-800">{{ shipment.description }}</p>
+                    <transition-group name="list">
+                        <div v-for="shipment in sortedShipments" :key="shipment.id" class="bg-white p-4 rounded-xl card-shadow mb-4">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <p class="text-sm font-semibold uppercase text-indigo-600">{{ shipment.id }}</p>
+                                    <p class="text-lg font-bold text-slate-800">{{ shipment.description }}</p>
+                                </div>
+                                <button @click="deleteShipment(shipment.id)" class="text-red-400 hover:text-red-600 p-2 text-sm font-medium">Delete</button>
                             </div>
-                            <button @click="deleteShipment(shipment.id)" class="text-red-400 hover:text-red-600 p-2">Delete</button>
+                            
+                            <!-- Update Actions -->
+                            <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                               <p class="text-sm font-medium text-slate-600">Update Status:</p>
+                               <input type="text" :id="'note-' + shipment.id" placeholder="Add a new status note..." class="w-full text-sm p-2 border border-slate-300 rounded-lg">
+                               <select :id="'status-' + shipment.id" class="w-full text-sm p-2 border border-slate-300 rounded-lg bg-white">
+                                    <option>Pending</option><option>In-Transit</option><option>Out-for-Delivery</option><option>On-Hold</option><option>Delivered</option><option>Exception</option>
+                               </select>
+                               <div class="grid grid-cols-2 gap-2">
+                                    <button @click="updateShipmentStatus(shipment.id, 'status')" :disabled="loading" class="w-full bg-slate-700 hover:bg-slate-800 text-white py-2 rounded-lg text-sm font-semibold transition-colors">
+                                        Update
+                                    </button>
+                                    <button @click="updateShipmentStatus(shipment.id, 'hold')" :disabled="loading" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-2 rounded-lg text-sm font-semibold transition-colors">
+                                        Hold
+                                    </button>
+                               </div>
+                               <button @click="copyTrackingLink(shipment.id)" class="w-full mt-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-semibold transition-colors">
+                                   Copy Tracking Link
+                               </button>
+                            </div>
                         </div>
-                        <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                           <p class="text-sm font-medium text-slate-600">Update Status:</p>
-                           <input type="text" :id="'note-' + shipment.id" placeholder="Add a new status note..." class="w-full text-sm p-2 border border-slate-300 rounded-lg">
-                           <select :id="'status-' + shipment.id" class="w-full text-sm p-2 border border-slate-300 rounded-lg bg-white">
-                                <option>Pending</option><option>In-Transit</option><option>Out-for-Delivery</option><option>On-Hold</option><option>Delivered</option><option>Exception</option>
-                           </select>
-                           <div class="grid grid-cols-2 gap-2">
-                                <button @click="updateShipmentStatus(shipment.id)" class="w-full bg-slate-700 text-white py-2 rounded-lg text-sm font-semibold">Add Update</button>
-                                <button @click="placeShipmentOnHold(shipment.id)" class="w-full bg-amber-500 text-white py-2 rounded-lg text-sm font-semibold">Place on Hold</button>
-                           </div>
-                           <button @click="copyTrackingLink(shipment.id)" class="w-full mt-2 bg-green-600 text-white py-2 rounded-lg text-sm font-semibold">Copy Tracking Link</button>
-                        </div>
-                    </div>
+                    </transition-group>
                 </div>
             </div>
         </div>
 
-        <div v-else class="bg-white p-6 rounded-2xl card-shadow">
-            <div v-if="!trackedShipment">
-                <p class="text-center text-slate-600 font-semibold text-lg">Loading shipment data...</p>
-                 <p class="text-center text-red-500 mt-4" v-if="trackingError">{{ trackingError }}</p>
+        <!-- TRACKING VIEW (Client-facing) -->
+        <div v-else class="bg-white p-6 rounded-2xl card-shadow max-w-2xl mx-auto">
+            <div v-if="loading && !trackedShipment" class="text-center p-8">
+                 <p class="text-slate-600 font-semibold text-lg animate-pulse">Loading shipment details...</p>
             </div>
-            <div v-else>
-                <div class="pb-4 border-b border-slate-200 mb-4">
-                    <p class="text-sm font-semibold uppercase text-indigo-600">{{ trackedShipment.id }}</p>
-                    <h2 class="text-2xl font-bold text-slate-800">{{ trackedShipment.description }}</h2>
+            
+            <div v-else-if="trackingError">
+                 <div class="text-center p-8">
+                     <p class="text-4xl mb-2">😕</p>
+                     <p class="text-red-500 font-bold mb-4">{{ trackingError }}</p>
+                     <button @click="isTrackingView = false; window.location.hash = ''" class="text-indigo-600 font-semibold hover:underline">
+                         Return to Dashboard
+                     </button>
+                 </div>
+            </div>
+            
+            <div v-else-if="trackedShipment">
+                <div class="pb-4 border-b border-slate-200 mb-4 flex justify-between items-start">
+                    <div>
+                        <p class="text-sm font-semibold uppercase text-indigo-600">{{ trackedShipment.id }}</p>
+                        <h2 class="text-2xl font-bold text-slate-800">{{ trackedShipment.description }}</h2>
+                    </div>
+                    
+                    <!-- CLIENT REFRESH BUTTON -->
+                    <button @click="fetchOneShipment(trackedShipment.id, true)" class="flex items-center text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors">
+                        <span class="mr-1.5 text-lg" :class="{ 'spin': loading }">↻</span> Refresh Status
+                    </button>
                 </div>
+                
                 <div class="grid md:grid-cols-2 gap-6 mb-6">
                     <div>
-                        <h3 class="font-bold text-slate-700 mb-3">Sender & Recipient</h3>
+                        <h3 class="font-bold text-slate-700 mb-3 border-b pb-1">Delivery Details</h3>
                         <div class="text-sm text-slate-600 space-y-2">
-                           <p><span class="font-semibold">From:</span> {{ trackedShipment.senderName }}</p>
-                           <p><span class="font-semibold">To:</span> {{ trackedShipment.recipientName }}</p>
-                           <p><span class="font-semibold">Email:</span> {{ trackedShipment.recipientEmail }}</p>
-                           <p><span class="font-semibold">Address:</span><br>{{ trackedShipment.recipientAddress }}</p>
+                           <p><span class="font-semibold text-slate-900">From:</span> {{ trackedShipment.senderName }}</p>
+                           <p><span class="font-semibold text-slate-900">To:</span> {{ trackedShipment.recipientName }}</p>
+                           <p><span class="font-semibold text-slate-900">Email:</span> {{ trackedShipment.recipientEmail }}</p>
+                           <p><span class="font-semibold text-slate-900">Address:</span><br>{{ trackedShipment.recipientAddress }}</p>
                         </div>
                     </div>
                     <div>
-                        <h3 class="font-bold text-slate-700 mb-3">Timeline</h3>
+                        <h3 class="font-bold text-slate-700 mb-3 border-b pb-1">Timeline</h3>
                         <div class="text-sm text-slate-600 space-y-2">
-                           <p><span class="font-semibold">Shipment Date:</span> {{ new Date(trackedShipment.startDate).toLocaleString() }}</p>
-                           <p><span class="font-semibold">Expected Delivery:</span> {{ new Date(trackedShipment.expectedDate).toLocaleString() }}</p>
+                           <p><span class="font-semibold text-slate-900">Shipment Date:</span><br>{{ formatDate(trackedShipment.startDate) }}</p>
+                           <p><span class="font-semibold text-slate-900">Expected Delivery:</span><br>{{ formatDate(trackedShipment.expectedDate) }}</p>
                         </div>
                     </div>
                 </div>
-                <h3 class="font-bold text-slate-700 mb-3">Status History</h3>
-                <div class="border-l-2 border-slate-200 ml-2">
-                     <div v-for="(update, index) in trackedShipment.statusHistory" :key="index" class="relative pl-8 pb-8">
-                        <div class="absolute -left-[11px] top-1 w-5 h-5 rounded-full" :class="index === 0 ? 'bg-indigo-600 ring-8 ring-white' : 'bg-slate-300'"></div>
-                        <p class="font-semibold text-slate-800">{{ update.status }}</p>
-                        <p class="text-slate-600 text-sm">{{ update.note }}</p>
-                        <p class="text-slate-400 text-xs mt-1">{{ new Date(update.timestamp.seconds * 1000).toLocaleString() }}</p>
-                    </div>
+                
+                <h3 class="font-bold text-slate-700 mb-4 border-b pb-1">Status History</h3>
+                <div class="border-l-2 border-slate-200 ml-2 space-y-0">
+                     <transition-group name="list">
+                         <div v-for="(update, index) in sortedHistory" :key="index" class="relative pl-8 pb-8 last:pb-0">
+                            <!-- Dot Indicator -->
+                            <div class="absolute -left-[11px] top-1 w-5 h-5 rounded-full border-2 border-white" 
+                                 :class="index === 0 ? 'bg-indigo-600 shadow-lg ring-2 ring-indigo-100' : 'bg-slate-300'">
+                            </div>
+                            
+                            <p class="font-bold text-slate-800">{{ update.status }}</p>
+                            <p class="text-slate-600 text-sm mb-1">{{ update.note }}</p>
+                            <p class="text-slate-400 text-xs uppercase tracking-wide">{{ formatDate(update.timestamp) }}</p>
+                        </div>
+                    </transition-group>
                 </div>
             </div>
         </div>
         
-        <div v-if="toast.show" class="fixed bottom-5 right-5 bg-slate-800 text-white py-3 px-5 rounded-lg shadow-xl">
-            {{ toast.message }}
+        <!-- Toast Notification -->
+        <div v-if="toast.show" class="fixed bottom-5 right-5 bg-slate-800 text-white py-3 px-5 rounded-lg shadow-xl z-50 flex items-center transition-all">
+            <span class="mr-2">🔔</span> {{ toast.message }}
         </div>
     </div>
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, deleteDoc, serverTimestamp, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-        
-        const firebaseConfig = {
-          apiKey: "AIzaSyA-9eJREND4cxNzju_4U01Tg4IUrLWNbfQ",
-          authDomain: "tracking-system-4d000.firebaseapp.com",
-          projectId: "tracking-system-4d000",
-          storageBucket: "tracking-system-4d000.firebasestorage.app",
-          messagingSenderId: "457867943433",
-          appId: "1:457867943433:web:8a3083c4cde07a3abb22d8"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        const { createApp, ref, onMounted, computed } = Vue;
+    <script>
+        const { createApp, ref, onMounted, onUnmounted, computed } = Vue;
 
         createApp({
             setup() {
                 const shipments = ref([]);
+                const loading = ref(false);
                 const newShipment = ref({
                     trackingNumber: '', description: '', senderName: '', recipientName: '',
                     initialStatusNote: '', startDate: '', expectedDate: '',
@@ -185,17 +239,34 @@
                 const trackedShipment = ref(null);
                 const trackingError = ref('');
                 const toast = ref({ show: false, message: '' });
-                
-                const shipmentsCol = collection(db, 'shipments');
 
+                // POINT TO YOUR LOCAL NETLIFY FUNCTION
+                const API_URL = '/.netlify/functions/shipments';
+
+                // --- COMPUTED PROPERTIES ---
                 const sortedShipments = computed(() => {
                     return shipments.value.slice().sort((a, b) => {
-                        if (a.lastUpdate && b.lastUpdate) {
-                            return b.lastUpdate.seconds - a.lastUpdate.seconds;
-                        }
-                        return 0;
+                         const dateA = new Date(a.lastUpdate || 0);
+                         const dateB = new Date(b.lastUpdate || 0);
+                         return dateB - dateA;
                     });
                 });
+
+                const sortedHistory = computed(() => {
+                    if(!trackedShipment.value || !trackedShipment.value.statusHistory) return [];
+                    return trackedShipment.value.statusHistory.slice().sort((a, b) => {
+                        return new Date(b.timestamp) - new Date(a.timestamp);
+                    });
+                });
+
+                // --- HELPERS ---
+                const formatDate = (dateString) => {
+                    if (!dateString) return '';
+                    return new Date(dateString).toLocaleString('en-US', { 
+                        month: 'short', day: 'numeric', year: 'numeric', 
+                        hour: 'numeric', minute: '2-digit' 
+                    });
+                };
 
                 const showToast = (message) => {
                     toast.value.message = message;
@@ -209,111 +280,148 @@
                     newShipment.value.trackingNumber = `${prefix}-${randomPart}`;
                 };
 
+                // --- API FUNCTIONS (MANUAL TRIGGER ONLY) ---
+
+                // 1. Fetch All (Called on load + Refresh Button)
+                const fetchShipments = async (showSpinner = false) => {
+                    if (showSpinner) loading.value = true;
+                    try {
+                        const res = await fetch(API_URL);
+                        const data = await res.json();
+                        if (res.ok) {
+                            shipments.value = data;
+                        } else {
+                            console.error("API Error", data);
+                        }
+                    } catch (e) {
+                        console.error("Network Error:", e);
+                    } finally {
+                        if (showSpinner) loading.value = false;
+                    }
+                };
+
+                // 2. Fetch One (Called on hash change + Refresh Button in tracking view)
+                const fetchOneShipment = async (id, showSpinner = false) => {
+                    if (showSpinner) loading.value = true;
+                    if (showSpinner) trackingError.value = '';
+                    
+                    try {
+                        const res = await fetch(`${API_URL}?id=${id}`);
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || "Not found");
+                        trackedShipment.value = data;
+                    } catch (e) {
+                        trackingError.value = "Shipment not found or could not be loaded.";
+                    } finally {
+                        if (showSpinner) loading.value = false;
+                    }
+                };
+
+                // 3. Create
                 const addShipment = async () => {
+                    loading.value = true;
                     try {
                         const ns = newShipment.value;
-                        if (Object.values(ns).some(val => val === '')) {
-                            return showToast("Error: Please fill in all fields.");
-                        }
-                        const trackingId = ns.trackingNumber.trim();
-                        const docRef = doc(db, 'shipments', trackingId);
-                        
-                        const docSnap = await getDoc(docRef);
-                        if (docSnap.exists()) {
-                            return showToast("Error: Tracking number already exists.");
-                        }
+                        if (Object.values(ns).some(val => val === '')) return showToast("Please fill all fields");
 
-                        await setDoc(docRef, {
-                            description: ns.description, senderName: ns.senderName, recipientName: ns.recipientName,
-                            startDate: ns.startDate, expectedDate: ns.expectedDate,
-                            recipientEmail: ns.recipientEmail, recipientAddress: ns.recipientAddress,
+                        const payload = {
+                            ...ns,
                             statusHistory: [{
                                 status: 'Pending',
                                 note: ns.initialStatusNote,
-                                timestamp: new Date() // <-- CORRECTED LINE
+                                timestamp: new Date().toISOString()
                             }],
-                            lastUpdate: serverTimestamp()
+                            lastUpdate: new Date().toISOString()
+                        };
+
+                        const res = await fetch(API_URL, {
+                            method: 'POST',
+                            body: JSON.stringify(payload)
                         });
+
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error);
+
                         newShipment.value = { 
                             trackingNumber: '', description: '', senderName: '', recipientName: '', 
                             initialStatusNote: '', startDate: '', expectedDate: '', 
                             recipientEmail: '', recipientAddress: '' 
                         };
                         showToast("Shipment created successfully!");
+                        // Manually refresh the list after adding
+                        fetchShipments(true);
                     } catch (error) {
-                        console.error("Error creating shipment:", error);
                         showToast(`Error: ${error.message}`);
+                    } finally {
+                        loading.value = false;
                     }
                 };
 
+                // 4. Delete
                 const deleteShipment = async (id) => {
-                    if (confirm("Are you sure?")) {
-                        await deleteDoc(doc(db, 'shipments', id));
+                    if (!confirm("Are you sure you want to delete this shipment?")) return;
+                    loading.value = true;
+                    try {
+                        await fetch(`${API_URL}?id=${id}`, { method: 'DELETE' });
                         showToast("Shipment deleted.");
+                        fetchShipments(true);
+                    } catch (e) {
+                        showToast("Error deleting shipment");
+                        loading.value = false;
                     }
                 };
                 
-                const placeShipmentOnHold = async (id) => {
-                    const reason = prompt("Reason for placing shipment on hold:");
-                    if (reason && reason.trim() !== '') {
-                        const docRef = doc(db, 'shipments', id);
-                        const newStatus = { status: 'On-Hold', note: reason, timestamp: new Date() }; // <-- CORRECTED LINE
-                        await updateDoc(docRef, {
-                            statusHistory: arrayUnion(newStatus),
-                            lastUpdate: serverTimestamp()
-                        });
-                        showToast("Shipment placed on hold.");
+                // 5. Update Status
+                const updateShipmentStatus = async (id, type) => {
+                    let note, status;
+                    if (type === 'hold') {
+                        note = prompt("Please enter the reason for the hold:");
+                        if (!note) return;
+                        status = 'On-Hold';
+                    } else {
+                        note = document.getElementById(`note-${id}`).value;
+                        status = document.getElementById(`status-${id}`).value;
+                        if (!note) return showToast("Please add a status note first");
                     }
-                };
 
-                const updateShipmentStatus = async (id) => {
-                    const note = document.getElementById(`note-${id}`).value;
-                    const status = document.getElementById(`status-${id}`).value;
-                    if (!note) { return showToast("Please add a status note."); }
-                    const docRef = doc(db, 'shipments', id);
-                    const newStatus = { status: status, note: note, timestamp: new Date() }; // <-- CORRECTED LINE
-                    await updateDoc(docRef, {
-                        statusHistory: arrayUnion(newStatus),
-                        lastUpdate: serverTimestamp()
-                    });
-                    document.getElementById(`note-${id}`).value = '';
-                    showToast("Status updated!");
+                    loading.value = true;
+                    try {
+                        const statusUpdate = {
+                            status: status,
+                            note: note,
+                            timestamp: new Date().toISOString()
+                        };
+
+                        await fetch(`${API_URL}?id=${id}`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ statusUpdate })
+                        });
+
+                        if (type !== 'hold') document.getElementById(`note-${id}`).value = '';
+                        showToast("Status updated successfully!");
+                        fetchShipments(true);
+                    } catch (e) {
+                        showToast("Update failed. Please try again.");
+                        loading.value = false;
+                    }
                 };
                 
                 const copyTrackingLink = (id) => {
                     const url = `${window.location.origin}${window.location.pathname}#${id}`;
-                    navigator.clipboard.writeText(url).then(() => {
-                        showToast("Tracking link copied!");
-                    });
+                    navigator.clipboard.writeText(url).then(() => showToast("Tracking link copied to clipboard!"));
                 };
 
                 const handleRouting = () => {
                     const trackingId = window.location.hash.replace('#', '');
                     if (trackingId) {
                         isTrackingView.value = true;
-                        trackedShipment.value = null;
-                        trackingError.value = '';
-                        const docRef = doc(db, "shipments", trackingId);
-                        onSnapshot(docRef, (docSnap) => {
-                             if (docSnap.exists()) {
-                                const data = docSnap.data();
-                                // Ensure status history is sorted newest first for client view
-                                if (data.statusHistory) {
-                                    data.statusHistory.sort((a,b) => b.timestamp.seconds - a.timestamp.seconds);
-                                }
-                                trackedShipment.value = { id: docSnap.id, ...data };
-                            } else {
-                                trackingError.value = "No shipment found.";
-                            }
-                        }, (error) => {
-                            console.error("Error fetching shipment:", error);
-                            trackingError.value = "Could not retrieve details.";
-                        });
+                        fetchOneShipment(trackingId, true);
                     } else {
                         isTrackingView.value = false;
-                        onSnapshot(shipmentsCol, (snapshot) => {
-                            shipments.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        });
+                        // Only fetch if list is empty to save bandwidth, otherwise user can hit refresh
+                        if (shipments.value.length === 0) {
+                            fetchShipments(true);
+                        }
                     }
                 };
 
@@ -321,11 +429,15 @@
                     handleRouting();
                     window.addEventListener('hashchange', handleRouting);
                 });
+                
+                onUnmounted(() => {
+                    window.removeEventListener('hashchange', handleRouting);
+                });
 
                 return {
-                    shipments, newShipment, isTrackingView, trackedShipment, trackingError, toast,
+                    shipments, newShipment, isTrackingView, trackedShipment, trackingError, toast, loading,
                     addShipment, deleteShipment, updateShipmentStatus, copyTrackingLink, 
-                    generateTrackingNumber, placeShipmentOnHold, sortedShipments
+                    generateTrackingNumber, sortedShipments, sortedHistory, fetchShipments, fetchOneShipment, formatDate
                 };
             }
         }).mount('#app');

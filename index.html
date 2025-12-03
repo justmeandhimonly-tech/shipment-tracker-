@@ -36,7 +36,7 @@
         /* Timeline Connector Line */
         .timeline-line {
             position: absolute;
-            left: 24px;
+            left: 23px; /* Center of the icon (w-12 is 48px, center is 24px, minus 1px width) */
             top: 40px;
             bottom: -20px;
             width: 2px;
@@ -288,7 +288,8 @@
                                     <h3 class="text-lg font-bold text-slate-800 mb-6 border-b border-slate-100 pb-2">Travel History</h3>
                                     
                                     <div class="relative pl-4">
-                                        <div v-for="(update, index) in sortedHistory" :key="index" class="timeline-item relative pl-10 pb-10">
+                                        <!-- FIXED PADDING HERE: Changed pl-10 to pl-20 -->
+                                        <div v-for="(update, index) in sortedHistory" :key="index" class="timeline-item relative pl-20 pb-10">
                                             <!-- Line -->
                                             <div class="timeline-line"></div>
                                             
